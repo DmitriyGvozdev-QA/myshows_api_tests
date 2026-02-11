@@ -8,7 +8,7 @@ from config.api_config import BASE_URL
 
 def test__get_series(prepare_series_data):
     response = requests.get(
-        BASE_URL + "/v1/series",
+     BASE_URL + "/v1/series",
     )
     assert response.status_code == 200
     body = response.json()
