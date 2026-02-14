@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+#Директории с результатами Allure:
+allure-results
+allure-report

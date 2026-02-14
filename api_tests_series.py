@@ -3,6 +3,8 @@
 
 
 from http import HTTPStatus
+
+import allure
 import psycopg
 import requests
 from _pytest.mark import param
@@ -11,6 +13,8 @@ from config.api_config import BASE_URL
 import pytest
 from jsonschema import validate
 import yaml
+
+from conftest import api_session
 from helpers.file_helpers import load_yml
 
 
@@ -18,25 +22,28 @@ from helpers.file_helpers import load_yml
 
 SCHEMA = load_yml("get_series.yml")
 
-
+@allure.title("Получение списка сериалов")
 @pytest.mark.parametrize(
     "prepare_series_data",
     ["series_0", "series_1", "series_3"],
     indirect=True,
     ids=["0 rows", "1 row", "3 rows"]
 )
-def test__get_series(prepare_series_data):
-    response = requests.get(
-     BASE_URL + "/v1/series",
-    )
-    assert response.status_code == 200
-    body = response.json()
-    validate(instance=body, schema=SCHEMA)
+def test__get_series(prepare_series_data, api_session):
+    with  allure.step("Получаем список сериалов из API"):
+        response = api_session.get(
+         BASE_URL + "/v1/series",
+        )
+    with  allure.step("Проверяем код ответа"):
+        assert response.status_code == 200
+    with  allure.step("Проверяем тело ответа"):
+        body = response.json()
+        validate(instance=body, schema=SCHEMA)
 
-    actual_count = len(body)
-    expected_count = prepare_series_data
-    assert actual_count == expected_count, \
-        f"Expected {expected_count} series, got {actual_count}"
+        actual_count = len(body)
+        expected_count = prepare_series_data
+        assert actual_count == expected_count, \
+            f"Expected {expected_count} series, got {actual_count}"
 
 
 
@@ -52,7 +59,7 @@ def test__get_series(prepare_series_data):
 # В рамках тирдауна фикстуры верни таблицу в исходное состояние, то есть удали эту запись (в этот раз нужно удалить только данную конкретную запись, а не чистить всю таблицу).
 
 
-
+@allure.title("Обновление информации о сериале")
 @pytest.mark.parametrize(
     "field, new_value",
     [
@@ -64,37 +71,38 @@ def test__get_series(prepare_series_data):
     ],
     ids=["name", "photo", "rating", "status", "review"]
 )
-def test__put_series(prepare_one_episode, field, new_value):
+def test__put_series(prepare_one_episode, field, new_value, api_session):
     series_id = prepare_one_episode
+    with  allure.step("Подключаемся к базе данных"):
+        conn_params = {
+            "dbname": "my-shows-rating",
+            "user": "postgres",
+            "password": "123456",
+            "host": "127.0.0.1",
+            "port": 5432,
+        }
+    with  allure.step("Ищем в базе данных сериал по id"):
+        with psycopg.connect(**conn_params, row_factory=dict_row) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT * FROM public.series WHERE id = %s;", (series_id,))
+                current_data = cur.fetchone()
 
-    conn_params = {
-        "dbname": "my-shows-rating",
-        "user": "postgres",
-        "password": "123456",
-        "host": "127.0.0.1",
-        "port": 5432,
-    }
-
-    with psycopg.connect(**conn_params, row_factory=dict_row) as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM public.series WHERE id = %s;", (series_id,))
-            current_data = cur.fetchone()
-
-    payload = dict(current_data)
-    payload[field] = new_value
-
-    response = requests.put(
-        BASE_URL + f"/v1/series/{series_id}",
-        json=payload
-    )
-    body = response.json()
-    assert response.status_code == HTTPStatus.OK, body
-
-    with psycopg.connect(**conn_params, row_factory=dict_row) as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM public.series WHERE id = %s;", (series_id,))
-            row = cur.fetchone()
-            assert row[field] == new_value
+        payload = dict(current_data)
+        payload[field] = new_value
+    with  allure.step("Получаем id сериала из API"):
+        response = api_session.put(
+            BASE_URL + f"/v1/series/{series_id}",
+            json=payload
+        )
+    with  allure.step("Проверяем код ответа"):
+        body = response.json()
+        assert response.status_code == HTTPStatus.OK, body
+    with  allure.step("Проверяем в базе данных, что информация о сериале обновилась"):
+        with psycopg.connect(**conn_params, row_factory=dict_row) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT * FROM public.series WHERE id = %s;", (series_id,))
+                row = cur.fetchone()
+                assert row[field] == new_value
 
 
 

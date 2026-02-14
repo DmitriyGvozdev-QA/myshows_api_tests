@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import psycopg
 from psycopg.rows import dict_row
 import pytest
+import requests
 
 load_dotenv()
 
@@ -103,3 +104,12 @@ def prepare_one_episode():
             conn.commit()
 
         conn.close()
+
+
+#Для построения отчета в Аллюре
+from helpers.api_helpers import ApiSession
+
+@pytest.fixture(scope="session")
+def api_session():
+    with requests.Session() as s:
+        yield ApiSession(s)
