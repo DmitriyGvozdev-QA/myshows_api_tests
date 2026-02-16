@@ -1,24 +1,17 @@
 # Дальше мы будем тестировать ручку GET /series — получать свой список сериалов. Но чтобы ее протестировать, у нас должен быть этот список, то есть нам нужно подготовить тестовые данные. Напиши фикстуру, которая через библиотеку psycopg напрямую добавляет в базу данные, достаточные для проверки ручки GET /series. Не забудь, что данные должны удаляться после прохождения теста, таблицу можно очищать целиком.
 # Напиши минимум один тест на ручку GET /series. Тест должен опираться на те данные, которые были ранее добавлены фикстурой, и обязательно должен успешно запускаться при вводе в консоли команды pytest в директории с тестовым проектом (то есть с твоим кодом, а не тестируемым сервисом).
 
-
 from http import HTTPStatus
 
 import allure
 import psycopg
-import requests
-from _pytest.mark import param
-from psycopg.rows import dict_row
-from config.api_config import BASE_URL
 import pytest
 from jsonschema import validate
-import yaml
+from psycopg.rows import dict_row
 
+from config.api_config import BASE_URL
 from conftest import api_session
-from helpers.file_helpers import load_yml
-
-
-
+from helpers.utils import load_yml
 
 SCHEMA = load_yml("get_series.yml")
 
@@ -30,13 +23,13 @@ SCHEMA = load_yml("get_series.yml")
     ids=["0 rows", "1 row", "3 rows"]
 )
 def test__get_series(prepare_series_data, api_session):
-    with  allure.step("Получаем список сериалов из API"):
+    with allure.step("Получаем список сериалов из API"):
         response = api_session.get(
          BASE_URL + "/v1/series",
         )
-    with  allure.step("Проверяем код ответа"):
-        assert response.status_code == 200
-    with  allure.step("Проверяем тело ответа"):
+    with allure.step("Проверяем код ответа"):
+        assert response.status_code == 200, ''
+    with allure.step("Проверяем тело ответа"):
         body = response.json()
         validate(instance=body, schema=SCHEMA)
 
@@ -44,8 +37,6 @@ def test__get_series(prepare_series_data, api_session):
         expected_count = prepare_series_data
         assert actual_count == expected_count, \
             f"Expected {expected_count} series, got {actual_count}"
-
-
 
 
 # [9.3][Практика] Параметризованные тесты
@@ -73,7 +64,7 @@ def test__get_series(prepare_series_data, api_session):
 )
 def test__put_series(prepare_one_episode, field, new_value, api_session):
     series_id = prepare_one_episode
-    with  allure.step("Подключаемся к базе данных"):
+    with allure.step("Подключаемся к базе данных"):
         conn_params = {
             "dbname": "my-shows-rating",
             "user": "postgres",
@@ -81,7 +72,7 @@ def test__put_series(prepare_one_episode, field, new_value, api_session):
             "host": "127.0.0.1",
             "port": 5432,
         }
-    with  allure.step("Ищем в базе данных сериал по id"):
+    with allure.step("Ищем в базе данных сериал по id"):
         with psycopg.connect(**conn_params, row_factory=dict_row) as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT * FROM public.series WHERE id = %s;", (series_id,))
@@ -89,22 +80,20 @@ def test__put_series(prepare_one_episode, field, new_value, api_session):
 
         payload = dict(current_data)
         payload[field] = new_value
-    with  allure.step("Получаем id сериала из API"):
+    with allure.step("Получаем id сериала из API"):
         response = api_session.put(
             BASE_URL + f"/v1/series/{series_id}",
             json=payload
         )
-    with  allure.step("Проверяем код ответа"):
+    with allure.step("Проверяем код ответа"):
         body = response.json()
         assert response.status_code == HTTPStatus.OK, body
-    with  allure.step("Проверяем в базе данных, что информация о сериале обновилась"):
+    with allure.step("Проверяем в базе данных, что информация о сериале обновилась"):
         with psycopg.connect(**conn_params, row_factory=dict_row) as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT * FROM public.series WHERE id = %s;", (series_id,))
                 row = cur.fetchone()
                 assert row[field] == new_value
-
-
 
 
 # Задание 2. Параметризация фикстуры

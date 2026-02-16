@@ -1,16 +1,15 @@
 import os
-from dotenv import load_dotenv
+
 import psycopg
-from psycopg.rows import dict_row
 import pytest
 import requests
+from dotenv import load_dotenv
+from psycopg.rows import dict_row
 
 load_dotenv()
 
 
-
 # [9.2][Практика] Pytest фикстуры
-
 
 @pytest.fixture()
 def prepare_series_data(request):
@@ -51,11 +50,9 @@ def prepare_series_data(request):
 #после теста очищаем таблицу в БД
     finally:
         with conn.cursor() as cur:
-                cur.execute("DELETE FROM public.series;")
-                conn.commit()
-                conn.close()
-
-
+            cur.execute("DELETE FROM public.series;")
+            conn.commit()
+            conn.close()
 
 
 # [9.3][Практика] Параметризованные тесты
@@ -67,7 +64,6 @@ def prepare_series_data(request):
 # В тесте сделай запрос /api/v1/series/{id} с обновлением информации в каком-либо из полей.
 # Посмотри в базу и убедись, что это поле действительно изменилось.
 # В рамках тирдауна фикстуры верни таблицу в исходное состояние, то есть удали эту запись (в этот раз нужно удалить только данную конкретную запись, а не чистить всю таблицу).
-
 
 
 @pytest.fixture()
@@ -105,9 +101,8 @@ def prepare_one_episode():
 
         conn.close()
 
-
 #Для построения отчета в Аллюре
-from helpers.api_helpers import ApiSession
+from helpers.api_session import ApiSession
 
 @pytest.fixture(scope="session")
 def api_session():

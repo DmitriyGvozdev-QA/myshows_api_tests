@@ -1,7 +1,7 @@
-import allure
 import json
-import requests
-from requests import Session
+
+import allure
+
 
 class ApiSession:
     def __init__(self, session):
