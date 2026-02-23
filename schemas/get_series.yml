@@ -1,0 +1,64 @@
+type: array
+items:
+  type: object
+  additionalProperties: false
+  properties:
+    id:
+      type: integer
+    name:
+      type: string
+    photo:
+      type: string
+      format: uri
+      nullable: true
+    rating:
+      type: integer
+      nullable: true
+    status:
+      type: string
+      enum: ["watching", "watched", "will_watch"]
+    review:
+      type: string
+      nullable: true
+  required:
+    - id
+    - name
+    - status
+
+
+
+#type: object
+#additionalProperties: false
+#properties:
+#  status:
+#    type: string
+#  data:
+#    type: array
+#    items:
+#      type: object
+#      additionalProperties: false
+#      properties:
+#        id:
+#          type: integer
+#        name:
+#          type: string
+#        photo:
+#          type: string
+#          format: uri
+#          nullable: true
+#        rating:
+#          type: integer
+#          nullable: true
+#        status:
+#          type: string
+#          enum: ["watching", "watched", "will_watch"]
+#        review:
+#          type: string
+#          nullable: true
+#      required:
+#        - id
+#        - name
+#        - status
+#required:
+#  - status
+#  - data
